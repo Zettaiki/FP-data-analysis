@@ -16,7 +16,7 @@ shadowJar { zip64 = true }
 javadoc { failOnError true }
 
 scalastyle {
-    config = file("${projectDir}/config/scalastyle_config.xml")
+    config = file("${projectDir}/config/checkstyle/scalastyle_config.xml")
     verbose = true
     failOnWarning = false
 }
