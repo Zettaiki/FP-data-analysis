@@ -43,3 +43,5 @@ bin/
 /.idea
 /keys
 /datasets
+/upload_parts
+src/main/res/aws_credentials.txt
