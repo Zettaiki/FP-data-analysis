@@ -7,16 +7,30 @@ object FlightPricesAnalysisApp {
   val path_output = "/output/"
 
   def main(args: Array[String]): Unit = {
+    if (args.length < 1) {
+      println("Usage: FlightPricesAnalysisApp <non-opt|opt|both>")
+      return
+    }
 
     val spark = SparkSession.builder()
       .appName("Flight Prices Analysis")
       .getOrCreate()
 
-    // Load the flight prices dataset
-    val rddItineraries = spark.sparkContext.textFile(path_dataset_itineraries)
+    // Load and parse the dataset.
+    val rddRaw = spark.sparkContext.textFile(path_dataset_itineraries)
+    val rddParsed = ItinerariesParser.parseRDD(rddRaw)
 
-    // Parse the CSV data
-    val rddParsedItineraries = ItinerariesParser.parseRDD(rddItineraries)
+    if (args(0) == "non-opt") {
+      println("Running non-optimized pipeline...\n")
+      nonOptimizedPipeline(rddParsed)
+    } else if (args(0) == "opt") {
+      println("Running optimized pipeline...\n")
+      optimizedPipeline(rddParsed)
+    } else if (args(0) == "both") {
+      println("Running both pipelines...\n")
+      optimizedPipeline(rddParsed)
+      nonOptimizedPipeline(rddParsed)
+    }
   }
 
   def nonOptimizedPipeline(): Unit = {
