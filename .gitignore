@@ -45,4 +45,6 @@ bin/
 /upload_parts
 /src/main/scala/debug/.ipynb_checkpoints
 datasets/archive.zip
+datasets/cleaned_flight_prices.csv
+datasets/itineraries_sample.csv
 datasets/itineraries.csv
