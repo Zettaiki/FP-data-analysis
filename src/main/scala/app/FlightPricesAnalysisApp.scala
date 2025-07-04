@@ -22,21 +22,39 @@ object FlightPricesAnalysisApp {
 
     // Load and parse the dataset.
     // NOTE: The dataset path should be set in the "Config" object, inside the "utils" directory.
-    val rddRaw = spark.sparkContext.textFile(path_dataset_itineraries)
-    // val rddRaw = spark.sparkContext.textFile("src/main/resources/itineraries.csv") // For local testing
+    val rddRaw = spark.sparkContext.textFile(path_dataset_itineraries).filter(line => !line.startsWith("legId"))
     val rddParsed = ItinerariesParser.parseRDD(rddRaw)
 
+    val startMillis = System.currentTimeMillis()
     if (args(0) == "non-opt") {
       println("Running non-optimized pipeline...\n")
-      nonOptimizedFlightPriceAnalysis(rddParsed)
+      val (firstJobResults, secondJobResults) = nonOptimizedFlightPriceAnalysis(rddParsed)
+      firstJobResults.collect()
+      secondJobResults.collect()
     } else if (args(0) == "opt") {
       println("Running optimized pipeline...\n")
-      optimizedFlightPriceAnalysis(rddParsed)
+      val (firstJobResults, secondJobResults) = optimizedFlightPriceAnalysis(rddParsed)
+      firstJobResults.collect()
+      secondJobResults.collect()
     } else if (args(0) == "both") {
       println("Running both pipelines...\n")
-      optimizedFlightPriceAnalysis(rddParsed)
-      nonOptimizedFlightPriceAnalysis(rddParsed)
+      val (firstJobResultsNonOpt, secondJobResultsNonOpt) = nonOptimizedFlightPriceAnalysis(rddParsed)
+      firstJobResultsNonOpt.collect()
+      secondJobResultsNonOpt.collect()
+      val (firstJobResultsOpt, secondJobResultsOpt) = optimizedFlightPriceAnalysis(rddParsed)
+      firstJobResultsOpt.collect()
+      secondJobResultsOpt.collect()
     }
+    val endMillis = System.currentTimeMillis()
+    println(s"\nTotal execution time: ${calculateTime(startMillis, endMillis)}")
+  }
+
+  private def calculateTime(startMillis: Long, endMillis: Long): String = {
+    val duration = endMillis - startMillis
+    val seconds = (duration / 1000) % 60
+    val minutes = (duration / (1000 * 60)) % 60
+    val hours = (duration / (1000 * 60 * 60)) % 24
+    f"$hours%02d:$minutes%02d:$seconds%02d"
   }
 
   private def nonOptimizedFlightPriceAnalysis(flights: RDD[Flight]): (RDD[String], RDD[String]) = {
