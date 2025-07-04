@@ -42,7 +42,5 @@ bin/
 .DS_Store
 /.idea
 /keys
-/datasets
 /upload_parts
-src/main/res/aws_credentials.txt
 /src/main/scala/debug/.ipynb_checkpoints
