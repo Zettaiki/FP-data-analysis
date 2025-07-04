@@ -44,3 +44,5 @@ bin/
 /keys
 /upload_parts
 /src/main/scala/debug/.ipynb_checkpoints
+datasets/archive.zip
+datasets/itineraries.csv
