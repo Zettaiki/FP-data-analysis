@@ -6,8 +6,6 @@ import java.io.InputStream
 
 object Commons {
 
-
-
   object DeploymentMode extends Enumeration {
     type DeploymentMode = Value
     val local, remote = Value
@@ -16,9 +14,9 @@ object Commons {
   import DeploymentMode._
 
   def initializeSparkContext(deploymentMode: String, spark: SparkSession): Unit = {
-    if(deploymentMode == remote){
+    if (deploymentMode == remote) {
       val stream: InputStream = getClass.getResourceAsStream(Config.credentialsPath)
-      val lines = scala.io.Source.fromInputStream( stream ).getLines.toList
+      val lines = scala.io.Source.fromInputStream(stream).getLines.toList
 
       spark.sparkContext.hadoopConfiguration.set("fs.s3a.fast.upload", "true")
       spark.sparkContext.hadoopConfiguration.set("fs.s3a.fast.upload.buffer", "bytebuffer")
@@ -29,10 +27,10 @@ object Commons {
   }
 
   def getDatasetPath(deploymentMode: String, localPath: String, remotePath: String): String = {
-    if(deploymentMode == "local"){
+    if (deploymentMode == "local") {
       return "file://" + Config.projectDir + "/" + localPath
     }
-    else{
+    else {
       return "s3a://" + Config.s3bucketName + "/" + remotePath
     }
   }
