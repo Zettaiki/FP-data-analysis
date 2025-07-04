@@ -2,6 +2,7 @@ package app
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import utils.Config.path_dataset_itineraries
 
 object FlightPricesAnalysisApp {
 
@@ -20,7 +21,9 @@ object FlightPricesAnalysisApp {
       .getOrCreate()
 
     // Load and parse the dataset.
+    // NOTE: The dataset path should be set in the "Config" object, inside the "utils" directory.
     val rddRaw = spark.sparkContext.textFile(path_dataset_itineraries)
+    // val rddRaw = spark.sparkContext.textFile("src/main/resources/itineraries.csv") // For local testing
     val rddParsed = ItinerariesParser.parseRDD(rddRaw)
 
     if (args(0) == "non-opt") {
