@@ -1,66 +1,86 @@
 package app
 
 import org.apache.spark.rdd.RDD
+import app.Flight
+
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 object ItinerariesParser {
-
   /**
    * Parse a single CSV row from the flight dataset
    *
    * @param row the raw CSV string
    * @return an Option of the parsed tuple or None if the row is invalid
    */
-  private def parseRow(row: String): Option[
-    (String, String, String, String, String, String, String, Int, Boolean, Boolean, Boolean,
-      Double, Double, Int, Option[Double],
-      String, String, String, String, String, String, String, String, String, String)
-  ] = {
+
+  private def parseLine(line: String): Option[Flight] = {
     try {
-      val columns = row.split(",", -1).map(_.trim)
+      val cols = line.split(",", -1).map(_.trim)
+      val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-      val legId = columns(0)
-      val searchDate = columns(1)
-      val flightDate = columns(2)
-      val startingAirport = columns(3)
-      val destinationAirport = columns(4)
-      val fareBasisCode = columns(5)
-      val travelDuration = columns(6)
-      val elapsedDays = columns(7).toInt
-      val isBasicEconomy = columns(8).toBoolean
-      val isRefundable = columns(9).toBoolean
-      val isNonStop = columns(10).toBoolean
-      val baseFare = columns(11).toDouble
-      val totalFare = columns(12).toDouble
-      val seatsRemaining = columns(13).toInt
-      val totalTravelDistance =
-        if (columns(14).isEmpty) None else Some(columns(14).toDouble)
+      def parseDurationToMinutes(duration: String): Int = {
+        val hourPattern = "PT(\\d+)H".r
+        val minutePattern = "PT(?:\\d+H)?(\\d+)M".r
 
-      val segmentsDepartureTimeEpochSeconds = columns(15)
-      val segmentsDepartureTimeRaw = columns(16)
-      val segmentsArrivalTimeEpochSeconds = columns(17)
-      val segmentsArrivalTimeRaw = columns(18)
-      val segmentsArrivalAirportCode = columns(19)
-      val segmentsDepartureAirportCode = columns(20)
-      val segmentsAirlineName = columns(21)
-      val segmentsAirlineCode = columns(22)
-      val segmentsEquipmentDescription = columns(23)
-      val segmentsDurationInSeconds = columns(24)
-      val segmentsDistance = columns(25)
-      val segmentsCabinCode = columns(26)
+        val hours = hourPattern.findFirstMatchIn(duration).map(_.group(1).toInt).getOrElse(0)
+        val minutes = minutePattern.findFirstMatchIn(duration).map(_.group(1).toInt).getOrElse(0)
 
-      Some((
-        legId, searchDate, flightDate, startingAirport, destinationAirport, fareBasisCode,
-        travelDuration, elapsedDays, isBasicEconomy, isRefundable, isNonStop,
-        baseFare, totalFare, seatsRemaining, totalTravelDistance,
-        segmentsDepartureTimeEpochSeconds, segmentsDepartureTimeRaw,
-        segmentsArrivalTimeEpochSeconds, segmentsArrivalTimeRaw,
-        segmentsArrivalAirportCode, segmentsDepartureAirportCode,
-        segmentsAirlineName, segmentsAirlineCode, segmentsEquipmentDescription,
-        segmentsDurationInSeconds, segmentsDistance, segmentsCabinCode
-      ))
+        hours * 60 + minutes
+      }
+
+      def toIntSafe(s: String): Int = try {
+        s.toInt
+      } catch {
+        case _: Exception => 0
+      }
+
+      def toDoubleSafe(s: String): Double = try {
+        s.toDouble
+      } catch {
+        case _: Exception => 0.0
+      }
+
+      def toBooleanSafe(s: String): Boolean = try {
+        s.toBoolean
+      } catch {
+        case _: Exception => false
+      }
+
+      val flight = Flight(
+        legId = cols(0),
+        searchDate = LocalDate.parse(cols(1), dateFormatter),
+        flightDate = LocalDate.parse(cols(2), dateFormatter),
+        startingAirport = cols(3),
+        destinationAirport = cols(4),
+        fareBasisCode = cols(5),
+        travelDuration = parseDurationToMinutes(cols(6)),
+        elapsedDays = toIntSafe(cols(7)),
+        isBasicEconomy = toBooleanSafe(cols(8)),
+        isRefundable = toBooleanSafe(cols(9)),
+        isNonStop = toBooleanSafe(cols(10)),
+        baseFare = toDoubleSafe(cols(11)),
+        totalFare = toDoubleSafe(cols(12)),
+        seatsRemaining = toIntSafe(cols(13)),
+        totalTravelDistance = toDoubleSafe(cols(14)),
+        segmentsDepartureTimeEpochSeconds = cols(15),
+        segmentsDepartureTimeRaw = cols(16),
+        segmentsArrivalTimeEpochSeconds = cols(17),
+        segmentsArrivalTimeRaw = cols(18),
+        segmentsArrivalAirportCode = cols(19),
+        segmentsDepartureAirportCode = cols(20),
+        segmentsAirlineName = cols(21),
+        segmentsAirlineCode = cols(22),
+        segmentsEquipmentDescription = cols(23),
+        segmentsDurationInSeconds = cols(24),
+        segmentsDistance = cols(25),
+        segmentsCabinCode = cols(26)
+      )
+
+      Some(flight)
     } catch {
-      case _: Exception =>
-        println(s"Error parsing row: $row")
+      case e: Exception =>
+        println(s"[PARSE ERROR] Line: $line\nError: ${e.getMessage}")
         None
     }
   }
@@ -71,13 +91,7 @@ object ItinerariesParser {
    * @param rdd input RDD of raw CSV lines
    * @return RDD of valid parsed tuples
    */
-  def parseRDD(
-                rdd: RDD[String]
-              ): RDD[
-    (String, String, String, String, String, String, String, Int, Boolean, Boolean, Boolean,
-      Double, Double, Int, Option[Double],
-      String, String, String, String, String, String, String, String, String, String)
-  ] = {
-    rdd.flatMap(parseRow)
+  def parseRDD(rdd: RDD[String]): RDD[Flight] = {
+    rdd.flatMap(parseLine)
   }
 }
